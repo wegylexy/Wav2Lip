@@ -279,9 +279,11 @@ def main():
 			
 			for p, f, c in zip(pred, frames, coords):
 				y1, y2, x1, x2 = c
-				p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
+				height = y2 - y1
+				m = height // 2
+				p = cv2.resize(p.astype(np.uint8), (x2 - x1, height))
 
-				f[y1:y2, x1:x2] = p
+				f[y1 + m:y2, x1:x2] = p[m:, :]
 				out.write(f)
 
 	out.release()
