@@ -195,7 +195,8 @@ def main():
 
 		else:
 			if video_stream is None:
-				video_stream = cv2.VideoCapture(args.face)
+				video_stream = cv2.VideoCapture(args.face, cv2.CAP_FFMPEG)
+				video_stream.set(cv2.CAP_PROP_HW_ACCELERATION, cv2.VIDEO_ACCELERATION_ANY)
 			fps = video_stream.get(cv2.CAP_PROP_FPS)
 
 			print('Reading video frames...')
