@@ -280,10 +280,10 @@ def main():
 			for p, f, c in zip(pred, frames, coords):
 				y1, y2, x1, x2 = c
 				height = y2 - y1
-				m = height // 2
-				p = cv2.resize(p.astype(np.uint8), (x2 - x1, height))
-
-				f[y1 + m:y2, x1:x2] = p[m:, :]
+				if height > 1:
+					m = height * 2 // 3
+					p = cv2.resize(p.astype(np.uint8), (x2 - x1, height), interpolation=cv2.INTER_LANCZOS4)
+					f[y1 + m:y2, x1 + 2:x2 - 2] = p[m:, 2:-2]
 				out.write(f)
 
 	out.release()
