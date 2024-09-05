@@ -1,12 +1,11 @@
-from os import listdir, path
 import numpy as np
-import scipy, cv2, os, sys, argparse, audio
-import json, subprocess, random, string
+import cv2, os, argparse, audio
+import subprocess
 from tqdm import tqdm
-from glob import glob
 import torch, face_detection
 from models import Wav2Lip
 import platform
+from onnxruntime import InferenceSession
 
 parser = argparse.ArgumentParser(description='Inference code to lip-sync videos in the wild using Wav2Lip models')
 
@@ -179,11 +178,16 @@ def load_model(path):
 	model = model.to(device)
 	return model.eval()
 
+def load_scaler(model_path: str, device_id: int = 0) -> InferenceSession:
+    providers = [('DmlExecutionProvider', {"device_id": str(device_id)})]
+    return InferenceSession(model_path, providers=providers)
+
 def main():
 	still_reading = True
 	video_stream = None
 	full_mel_chunks = None
 	out = None
+	scaler = load_scaler('work/BSRGANx4_fp16.onnx')
 	while still_reading:
 		if not os.path.isfile(args.face):
 			raise ValueError('--face argument must be a valid path to video/image file')
@@ -275,15 +279,27 @@ def main():
 			with torch.no_grad():
 				pred = model(mel_batch, img_batch)
 
-			pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.
-			
+			pred = np.array([
+				np.transpose(np.clip(np.squeeze(
+					scaler.run(None, {scaler.get_inputs()[0].name: np.expand_dims(np.transpose(image, (2, 0, 1)), axis=0)})[0]
+				, axis=0), 0, 1), (1, 2, 0)) for image in pred.cpu().numpy().transpose(0, 2, 3, 1)
+			])
+
 			for p, f, c in zip(pred, frames, coords):
 				y1, y2, x1, x2 = c
 				height = y2 - y1
 				if height > 1:
-					m = height * 2 // 3
-					p = cv2.resize(p.astype(np.uint8), (x2 - x1, height), interpolation=cv2.INTER_LANCZOS4)
-					f[y1 + m:y2, x1 + 2:x2 - 2] = p[m:, 2:-2]
+					m = height // 2
+					width = x2 - x1
+					p = cv2.resize(p, (width, height), interpolation=cv2.INTER_LINEAR)
+					height = height - m
+					mask = np.zeros((height, width), dtype=np.float32)
+					mask[48:-48, 48:-48] = 1
+					mask = cv2.GaussianBlur(mask, (97, 97), 0)
+					mask = mask[..., np.newaxis]
+					n = 1 - mask
+					p = p[m:, :] * 255
+					f[y1 + m:y2, x1:x2] = (p * mask + f[y1 + m:y2, x1:x2] * n).astype(np.uint8)
 				out.write(f)
 
 	out.release()
