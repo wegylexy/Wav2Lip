@@ -5,7 +5,6 @@ from tqdm import tqdm
 import torch, face_detection
 from models import Wav2Lip
 import platform
-from onnxruntime import InferenceSession
 
 parser = argparse.ArgumentParser(description='Inference code to lip-sync videos in the wild using Wav2Lip models')
 
@@ -178,16 +177,11 @@ def load_model(path):
 	model = model.to(device)
 	return model.eval()
 
-def load_scaler(model_path: str, device_id: int = 0) -> InferenceSession:
-    providers = [('DmlExecutionProvider', {"device_id": str(device_id)})]
-    return InferenceSession(model_path, providers=providers)
-
 def main():
 	still_reading = True
 	video_stream = None
 	full_mel_chunks = None
 	out = None
-	scaler = load_scaler('work/BSRGANx4_fp16.onnx')
 	while still_reading:
 		if not os.path.isfile(args.face):
 			raise ValueError('--face argument must be a valid path to video/image file')
@@ -206,7 +200,7 @@ def main():
 			print('Reading video frames...')
 
 			full_frames = []
-			while len(full_frames) < 1800:
+			while len(full_frames) < 115200:
 				still_reading, frame = video_stream.read()
 				if not still_reading:
 					video_stream.release()
@@ -256,9 +250,12 @@ def main():
 
 			print("Length of mel chunks: {}".format(len(full_mel_chunks)))
 
-		mel_chunks = full_mel_chunks[:len(full_frames)]
-		full_mel_chunks = full_mel_chunks[len(full_frames):]
-		full_frames = full_frames[:len(mel_chunks)]
+		if args.static:
+			mel_chunks = full_mel_chunks
+		else:
+			mel_chunks = full_mel_chunks[:len(full_frames)]
+			full_mel_chunks = full_mel_chunks[len(full_frames):]
+			full_frames = full_frames[:len(mel_chunks)]
 
 		batch_size = args.wav2lip_batch_size
 		gen = datagen(full_frames.copy(), mel_chunks)
@@ -279,23 +276,19 @@ def main():
 			with torch.no_grad():
 				pred = model(mel_batch, img_batch)
 
-			pred = np.array([
-				np.transpose(np.clip(np.squeeze(
-					scaler.run(None, {scaler.get_inputs()[0].name: np.expand_dims(np.transpose(image, (2, 0, 1)), axis=0)})[0]
-				, axis=0), 0, 1), (1, 2, 0)) for image in pred.cpu().numpy().transpose(0, 2, 3, 1)
-			])
-
+			pred = pred.cpu().numpy().transpose(0, 2, 3, 1)
+			
 			for p, f, c in zip(pred, frames, coords):
 				y1, y2, x1, x2 = c
 				height = y2 - y1
 				if height > 1:
 					m = height // 2
 					width = x2 - x1
-					p = cv2.resize(p, (width, height), interpolation=cv2.INTER_LINEAR)
+					p = cv2.resize(p, (width, height), interpolation=cv2.INTER_CUBIC)
 					height = height - m
 					mask = np.zeros((height, width), dtype=np.float32)
-					mask[48:-48, 48:-48] = 1
-					mask = cv2.GaussianBlur(mask, (97, 97), 0)
+					mask[12:-12, 12:-12] = 1
+					mask = cv2.GaussianBlur(mask, (25, 25), 0)
 					mask = mask[..., np.newaxis]
 					n = 1 - mask
 					p = p[m:, :] * 255
