@@ -5,6 +5,7 @@ from tqdm import tqdm
 import torch, face_detection
 from models import Wav2Lip
 import platform
+import ffmpegcv
 
 parser = argparse.ArgumentParser(description='Inference code to lip-sync videos in the wild using Wav2Lip models')
 
@@ -47,9 +48,6 @@ parser.add_argument('--rotate', default=False, action='store_true',
 
 parser.add_argument('--nosmooth', default=False, action='store_true',
 					help='Prevent smoothing face detections over a short temporal window')
-
-parser.add_argument('--merge', type=bool, 
-					help='If True, then merge video and audio', default=True)
 
 args = parser.parse_args()
 args.img_size = 96
@@ -270,8 +268,7 @@ def main():
 				print ("Model loaded")
 
 				frame_h, frame_w = full_frames[0].shape[:-1]
-				out = cv2.VideoWriter('temp/result.m4v', 
-										cv2.VideoWriter_fourcc(*'avc1'), fps, (frame_w, frame_h))
+				out = ffmpegcv.VideoWriterNV('temp/result.m4v', 'h264', fps, (frame_w, frame_h))
 
 			img_batch = torch.FloatTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(device)
 			mel_batch = torch.FloatTensor(np.transpose(mel_batch, (0, 3, 1, 2))).to(device)
@@ -300,9 +297,8 @@ def main():
 
 	out.release()
 
-	if args.merge:
-		command = 'ffmpeg -y -i {} -i {} -strict -2 -q:v 1 {}'.format('temp/result.m4v', args.audio, args.outfile)
-		subprocess.call(command, shell=platform.system() != 'Windows')
+	command = 'ffmpeg -y -i {} -i {} -strict -2 -q:v 1 -c:v copy {}'.format('temp/result.m4v', args.audio, args.outfile)
+	subprocess.call(command, shell=platform.system() != 'Windows')
 
 if __name__ == '__main__':
 	main()

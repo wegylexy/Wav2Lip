@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime AS base
+FROM nvcr.io/nvidia/pytorch:24.12-py3 AS base
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg && \
     rm -rf /var/lib/apt/lists/*
@@ -6,7 +6,6 @@ RUN apt-get update && \
 FROM base AS build
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-RUN pip install openh264
 COPY . .
 ADD https://huggingface.co/mozi1924/wav2lip/resolve/main/wav2lip.pth?download=true checkpoints/wav2lip.pth
   # https://huggingface.co/Ftfyhh/wav2lip/resolve/main/wav2lip.pth?download=true
