@@ -48,6 +48,9 @@ parser.add_argument('--rotate', default=False, action='store_true',
 parser.add_argument('--nosmooth', default=False, action='store_true',
 					help='Prevent smoothing face detections over a short temporal window')
 
+parser.add_argument('--merge', type=bool, 
+					help='If True, then merge video and audio', default=True)
+
 args = parser.parse_args()
 args.img_size = 96
 
@@ -268,7 +271,7 @@ def main():
 
 				frame_h, frame_w = full_frames[0].shape[:-1]
 				out = cv2.VideoWriter('temp/result.m4v', 
-										cv2.VideoWriter_fourcc(*'mp4v'), fps, (frame_w, frame_h))
+										cv2.VideoWriter_fourcc(*'avc1'), fps, (frame_w, frame_h))
 
 			img_batch = torch.FloatTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(device)
 			mel_batch = torch.FloatTensor(np.transpose(mel_batch, (0, 3, 1, 2))).to(device)
@@ -297,8 +300,9 @@ def main():
 
 	out.release()
 
-	command = 'ffmpeg -y -i {} -i {} -strict -2 -q:v 1 -c copy {}'.format(args.audio, 'temp/result.m4v', args.outfile)
-	subprocess.call(command, shell=platform.system() != 'Windows')
+	if args.merge:
+		command = 'ffmpeg -y -i {} -i {} -strict -2 -q:v 1 {}'.format('temp/result.m4v', args.audio, args.outfile)
+		subprocess.call(command, shell=platform.system() != 'Windows')
 
 if __name__ == '__main__':
 	main()

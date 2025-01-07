@@ -6,6 +6,7 @@ RUN apt-get update && \
 FROM base AS build
 COPY requirements.txt .
 RUN pip install -r requirements.txt
+RUN pip install openh264
 COPY . .
 ADD https://huggingface.co/mozi1924/wav2lip/resolve/main/wav2lip.pth?download=true checkpoints/wav2lip.pth
   # https://huggingface.co/Ftfyhh/wav2lip/resolve/main/wav2lip.pth?download=true
