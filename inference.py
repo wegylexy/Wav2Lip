@@ -268,7 +268,7 @@ def main():
 				print ("Model loaded")
 
 				frame_h, frame_w = full_frames[0].shape[:-1]
-				out = ffmpegcv.VideoWriterNV('temp/result.m4v', 'h264', fps, (frame_w, frame_h))
+				out = ffmpegcv.VideoWriterNV('temp/result.m4v', 'h264', fps)
 
 			img_batch = torch.FloatTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(device)
 			mel_batch = torch.FloatTensor(np.transpose(mel_batch, (0, 3, 1, 2))).to(device)

@@ -11,6 +11,7 @@ ADD https://huggingface.co/mozi1924/wav2lip/resolve/main/wav2lip.pth?download=tr
   # https://huggingface.co/Ftfyhh/wav2lip/resolve/main/wav2lip.pth?download=true
   # https://huggingface.co/Cong-HGMedia/wav2lip/resolve/main/wav2lip.pth?download=true
   # https://huggingface.co/gmk123/wav2lip/resolve/main/wav2lip.pth?download=true
+ADD https://www.adrianbulat.com/downloads/python-fan/s3fd-619a316812.pth /root/.cache/torch/hub/checkpoints/s3fd-619a316812.pth
 
 FROM build AS publish
 ENTRYPOINT [ "python", "/workspace/inference.py", "--checkpoint_path", "/workspace/checkpoints/wav2lip.pth" ]
