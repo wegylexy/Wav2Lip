@@ -1,6 +1,7 @@
 FROM nvcr.io/nvidia/pytorch:24.12-py3 AS base
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 FROM base AS build
