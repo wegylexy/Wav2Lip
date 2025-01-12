@@ -287,8 +287,10 @@ def main():
 					p = cv2.resize(p, (width, height), interpolation=cv2.INTER_CUBIC)
 					height = height - m
 					mask = np.zeros((height, width), dtype=np.float32)
-					mask[12:-12, 12:-12] = 1
-					mask = cv2.GaussianBlur(mask, (25, 25), 0)
+					b = int(max(width, height) * 4 / 96) * 2
+					mask[b:-b, b:-b] = 1
+					b = b * 2 + 1
+					mask = cv2.GaussianBlur(mask, (b, b), 0)
 					mask = mask[..., np.newaxis]
 					n = 1 - mask
 					p = p[m:, :] * 255
