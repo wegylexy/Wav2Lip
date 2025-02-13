@@ -226,7 +226,7 @@ def main():
 		if full_mel_chunks is None:
 			if not args.audio.endswith('.wav'):
 				print('Extracting raw audio...')
-				command = 'ffmpeg -y -i {} -strict -2 {}'.format(args.audio, 'temp/temp.wav')
+				command = 'ffmpeg -y -i "{}" -strict -2 {}'.format(args.audio, 'temp/temp.wav')
 
 				subprocess.call(command, shell=True)
 				args.audio = 'temp/temp.wav'
@@ -299,7 +299,7 @@ def main():
 
 	out.release()
 
-	command = 'ffmpeg -y -i {} -i {} -strict -2 -q:v 1 -c:v copy {}'.format('temp/result.m4v', args.audio, args.outfile)
+	command = 'ffmpeg -y -i {} -i "{}" -strict -2 -q:v 1 -c:v copy "{}"'.format('temp/result.m4v', args.audio, args.outfile)
 	subprocess.call(command, shell=platform.system() != 'Windows')
 
 if __name__ == '__main__':
