@@ -1,8 +1,211 @@
 # **Wav2Lip**: *Accurately Lip-syncing Videos In The Wild* 
-### Wav2Lip is hosted for free at [sync.](https://sync.so/)
-Are you looking to integrate this into a product? We have a turn-key hosted API with new and improved lip-syncing models here: https://sync.so/
-For any other commercial / enterprise requests, please contact us at pavan@sync.so and prady@sync.so
-To reach out to the authors directly you can reach us at prajwal@sync.so, rudrabha@sync.so.
+
+# Commercial Version
+
+Create your first lipsync generation in minutes. Please note, the commercial version is of a much higher quality than the old open source model!
+
+## Create your API Key
+
+Create your API key from the [Dashboard](https://sync.so/keys). You will use this key to securely access the Sync API.
+
+## Make your first generation
+
+The following example shows how to make a lipsync generation using the Sync API.
+
+### Python
+
+#### Step 1: Install Sync SDK
+
+```bash
+pip install syncsdk
+```
+
+#### Step 2: Make your first generation
+
+Copy the following code into a file `quickstart.py` and replace `YOUR_API_KEY_HERE` with your generated API key.
+
+```python
+# quickstart.py
+import time
+from sync import Sync
+from sync.common import Audio, GenerationOptions, Video
+from sync.core.api_error import ApiError
+
+# ---------- UPDATE API KEY ----------
+# Replace with your Sync.so API key
+api_key = "YOUR_API_KEY_HERE" 
+
+# ----------[OPTIONAL] UPDATE INPUT VIDEO AND AUDIO URL ----------
+# URL to your source video
+video_url = "https://assets.sync.so/docs/example-video.mp4"
+# URL to your audio file
+audio_url = "https://assets.sync.so/docs/example-audio.wav"
+# ----------------------------------------
+
+client = Sync(
+    base_url="https://api.sync.so", 
+    api_key=api_key
+).generations
+
+print("Starting lip sync generation job...")
+
+try:
+    response = client.create(
+        input=[Video(url=video_url),Audio(url=audio_url)],
+        model="lipsync-2",
+        options=GenerationOptions(sync_mode="cut_off"),
+        outputFileName="quickstart"
+    )
+except ApiError as e:
+    print(f'create generation request failed with status code {e.status_code} and error {e.body}')
+    exit()
+
+job_id = response.id
+print(f"Generation submitted successfully, job id: {job_id}")
+
+generation = client.get(job_id)
+status = generation.status
+while status not in ['COMPLETED', 'FAILED']:
+    print('polling status for generation', job_id)
+    time.sleep(10)
+    generation = client.get(job_id)
+    status = generation.status
+
+if status == 'COMPLETED':
+    print('generation', job_id, 'completed successfully, output url:', generation.output_url)
+else:
+    print('generation', job_id, 'failed')
+```
+
+Run the script:
+
+```bash
+python quickstart.py
+```
+
+#### Step 3: Done!
+
+It may take a few minutes for the generation to complete. You should see the generated video URL in the terminal post completion.
+
+---
+
+### TypeScript
+
+#### Step 1: Install dependencies
+
+```bash
+npm i @sync.so/sdk
+```
+
+#### Step 2: Make your first generation
+
+Copy the following code into a file `quickstart.ts` and replace `YOUR_API_KEY_HERE` with your generated API key.
+
+```typescript
+// quickstart.ts
+import { SyncClient, SyncError } from "@sync.so/sdk";
+
+// ---------- UPDATE API KEY ----------
+// Replace with your Sync.so API key
+const apiKey = "YOUR_API_KEY_HERE";
+
+// ----------[OPTIONAL] UPDATE INPUT VIDEO AND AUDIO URL ----------
+// URL to your source video
+const videoUrl = "https://assets.sync.so/docs/example-video.mp4";
+// URL to your audio file
+const audioUrl = "https://assets.sync.so/docs/example-audio.wav";
+// ----------------------------------------
+
+const client = new SyncClient({ apiKey });
+
+async function main() {
+    console.log("Starting lip sync generation job...");
+
+    let jobId: string;
+    try {
+        const response = await client.generations.create({
+            input: [
+                {
+                    type: "video",
+                    url: videoUrl,
+                },
+                {
+                    type: "audio",
+                    url: audioUrl,
+                },
+            ],
+            model: "lipsync-2",
+            options: {
+                sync_mode: "cut_off",
+            },
+            outputFileName: "quickstart"
+        });
+        jobId = response.id;
+        console.log(`Generation submitted successfully, job id: ${jobId}`);
+    } catch (err) {
+        if (err instanceof SyncError) {
+            console.error(`create generation request failed with status code ${err.statusCode} and error ${JSON.stringify(err.body)}`);
+        } else {
+            console.error('An unexpected error occurred:', err);
+        }
+        return;
+    }
+
+    let generation;
+    let status;
+    while (status !== 'COMPLETED' && status !== 'FAILED') {
+        console.log(`polling status for generation ${jobId}...`);
+        try {
+            await new Promise(resolve => setTimeout(resolve, 10000));
+            generation = await client.generations.get(jobId);
+            status = generation.status;
+        } catch (err) {
+            if (err instanceof SyncError) {
+                console.error(`polling failed with status code ${err.statusCode} and error ${JSON.stringify(err.body)}`);
+            } else {
+                console.error('An unexpected error occurred during polling:', err);
+            }
+            status = 'FAILED';
+        }
+    }
+
+    if (status === 'COMPLETED') {
+        console.log(`generation ${jobId} completed successfully, output url: ${generation?.outputUrl}`);
+    } else {
+        console.log(`generation ${jobId} failed`);
+    }
+}
+
+main();
+```
+
+Run the script:
+
+```bash
+npx tsx quickstart.ts -y
+```
+
+#### Step 3: Done!
+
+You should see the generated video URL in the terminal.
+
+---
+
+## Next Steps
+
+Well done! You've just made your first lipsync generation with sync.so!
+
+Ready to unlock the full potential of lipsync? Dive into our interactive [Studio](https://sync.so/login) to experiment with all available models, or explore our [API Documentation](/api-reference) to take your lip-sync generations to the next level!
+
+## Contact
+- prady@sync.so
+- pavan@sync.so
+- sanjit@sync.so
+
+
+
+# Non Commercial Open-source Version
+
 This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to Lip Generation In the Wild_ published at ACM Multimedia 2020. 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/a-lip-sync-expert-is-all-you-need-for-speech/lip-sync-on-lrs2)](https://paperswithcode.com/sota/lip-sync-on-lrs2?p=a-lip-sync-expert-is-all-you-need-for-speech)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/a-lip-sync-expert-is-all-you-need-for-speech/lip-sync-on-lrs3)](https://paperswithcode.com/sota/lip-sync-on-lrs3?p=a-lip-sync-expert-is-all-you-need-for-speech)
@@ -16,7 +219,7 @@ This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to
 **Highlights**
 ----------
  - Weights of the visual quality disc has been updated in readme!
- - Lip-sync videos to any target speech with high accuracy :100:. Try our [interactive demo](https://synclabs.so/).
+ - Lip-sync videos to any target speech with high accuracy :100:. Try our [interactive demo](https://sync.so/).
  - :sparkles: Works for any identity, voice, and language. Also works for CGI faces and synthetic voices.
  - Complete training code, inference code, and pretrained models are available :boom:
  - Or, quick-start with the Google Colab Notebook: [Link](https://colab.research.google.com/drive/1tZpDWXz49W6wDcTprANRGLo2D_EbD5J8?usp=sharing). Checkpoints and samples are available in a Google Drive [folder](https://drive.google.com/drive/folders/1I-0dNLfFOSFwrfqjNa-SXuwaURHE5K4k?usp=sharing) as well. There is also a [tutorial video](https://www.youtube.com/watch?v=Ic0TBhfuOrA) on this, courtesy of [What Make Art](https://www.youtube.com/channel/UCmGXH-jy0o2CuhqtpxbaQgA). Also, thanks to [Eyal Gruss](https://eyalgruss.com), there is a more accessible [Google Colab notebook](https://j.mp/wav2lip) with more useful features. A tutorial collab notebook is present at this [link](https://colab.research.google.com/drive/1IjFW1cLevs6Ouyu4Yht4mnR4yeuMqO7Y#scrollTo=MH1m608OymLH).  
@@ -35,10 +238,10 @@ Getting the weights
 ----------
 | Model  | Description |  Link to the model | 
 | :-------------: | :---------------: | :---------------: |
-| Wav2Lip  | Highly accurate lip-sync | [Link](https://iiitaphyd-my.sharepoint.com/:u:/g/personal/radrabha_m_research_iiit_ac_in/Eb3LEzbfuKlJiR600lQWRxgBIY27JZg80f7V9jtMfbNDaQ?e=TBFBVW)  |
-| Wav2Lip + GAN  | Slightly inferior lip-sync, but better visual quality | [Link](https://iiitaphyd-my.sharepoint.com/:u:/g/personal/radrabha_m_research_iiit_ac_in/EdjI7bZlgApMqsVoEUUXpLsBxqXbn5z8VTmoxp55YNDcIA?e=n9ljGW) |
-| Expert Discriminator  | Weights of the expert discriminator | [Link](https://iiitaphyd-my.sharepoint.com/:u:/g/personal/radrabha_m_research_iiit_ac_in/EQRvmiZg-HRAjvI6zqN9eTEBP74KefynCwPWVmF57l-AYA?e=ZRPHKP) |
-| Visual Quality Discriminator  | Weights of the visual disc trained in a GAN setup | [Link](https://iiitaphyd-my.sharepoint.com/:u:/g/personal/radrabha_m_research_iiit_ac_in/EQVqH88dTm1HjlK11eNba5gBbn15WMS0B0EZbDBttqrqkg?e=ic0ljo) |
+| Wav2Lip  | Highly accurate lip-sync | [Link](https://drive.google.com/drive/folders/153HLrqlBNxzZcHi17PEvP09kkAfzRshM?usp=share_link)  |
+| Wav2Lip + GAN  | Slightly inferior lip-sync, but better visual quality | [Link](https://drive.google.com/file/d/15G3U08c8xsCkOqQxE38Z2XXDnPcOptNk/view?usp=share_link) |
+
+
 Lip-syncing videos using the pre-trained models (Inference)
 -------
 You can lip-sync any video to any audio:
